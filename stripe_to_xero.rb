@@ -3,7 +3,9 @@
 require 'csv'
 require 'date'
 require 'stripe'
+require 'byebug'
 
+PER_PAGE = 100
 def cents_to_dollars(value)
   if value != 0
     val = value.to_s[0..-3] + "." + value.to_s[-2..-1]
@@ -23,14 +25,27 @@ end
 Stripe.api_key = ENV['STRIPE_SECRET']
 #Stripe.api_key = '' #Put your secret here and comment the line above if you're not sure about env vars.
 bank_name = ENV['BANK_NAME'] || "US Bank"
-count = ENV['STX_COUNT'] || 50
+given_limit = ENV['STX_COUNT'] || 50
+limit = given_limit.to_i
 output_file = 'xero.csv'
 
-puts "gathering last #{count} charges"
-charges = Stripe::Charge.all(count: count, :expand => ['data.customer'])
+puts "gathering last #{limit} charges"
+pages = (limit - 1)/PER_PAGE + 1 # we can get max 100 per page, so number of pages is the number of pages into the *next* 100
+starting_after = nil
+charges = []
+pages.times do |page_no|
+  call_limit = [limit,PER_PAGE].min
+  puts "Page #{page_no+1}: from #{page_no * PER_PAGE} to #{page_no * PER_PAGE + call_limit - 1}"
+  charges += Stripe::Charge.all(limit: call_limit, starting_after: starting_after, expand: ['data.customer']).to_a
+  # debugger
+  limit -= PER_PAGE
+  starting_after = charges.last
+end
 puts "done!"
-puts "gathering last #{count} transfers"
-transfers = Stripe::Transfer.all(count: count)
+
+limit = given_limit.to_i
+puts "gathering last #{limit} transfers"
+transfers = Stripe::Transfer.all(limit: limit)
 puts "done"
 
 def process_refunds(charge, csv)
@@ -89,11 +104,18 @@ CSV.open(output_file, 'wb', row_sep: "\r\n") do |csv|
           description = "Payment from #{charge.customer.description} / #{charge.customer.email}"
         end
       else
-        description = "Payment from nil customer"
-        payee = "Nil customer"
+        payee = charge.card.name
+        description = "Payment from cardholder: #{payee}"
       end
-
       amount = cents_to_dollars charge.amount
+      if charge.currency != 'gbp'
+        # store amount in original currency
+        description += " #{charge.currency.upcase}#{amount}"
+        # and change to amount in local currency
+        # with thanks to https://gist.github.com/siddarth/6241382
+        balance_transaction = Stripe::BalanceTransaction.retrieve(charge.balance_transaction)
+        amount = cents_to_dollars(balance_transaction.amount)
+      end
       reference = charge.id
       type = "Credit"
 
