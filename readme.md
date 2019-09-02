@@ -1,8 +1,10 @@
-This is a script for porting all the Stripe data you care about into Xero as a bank statement, which means you can easily reconcile invoices, bank transfers, fees, etc. The script pulls directly from your Stripe account, with no messy intermediate steps.
+Based on original script here: https://github.com/facebookarchive/stripe_to_xero
+
+This is a script for porting Stripe transactions and transfers into Xero as a bank statement, which means you can easily reconcile invoices, bank transfers, fees, etc. The script pulls directly from the Stripe account. It should use an API that only has read permissions.
 
 # Configuration
 
-## Configuration in Xero
+## First time configuration in Xero
 Create a `Stripe` bank account in Xero. It should be a manual account. Also, create a new `bot` user, who will handle uploading bank statements.
 
 ## Environment Variables
@@ -24,9 +26,9 @@ Use these environment variables as configuration
 
 # Usage
 
-- Run `auto_import.sh` to automatically import your Stripe data into Xero.
-- Or, just run the `stripe_to_xero.rb` script to generate `xero.csv` which you can upload manually.
+- Run the `stripe_to_xero.rb` script to generate `xero.csv` which you can upload manually.
 - Reconcile away.
+`STRIPE_SECRET=rk_live_xxxxxxxxxxxxxxxxxx ruby ./stripe_to_xero.rb`
 
 # Notes
 
@@ -35,6 +37,8 @@ We use `foreman` to easily set up environment variables. You might find it handy
 Requires ruby 1.9.
 
 # Changelog
+
+v4 - Improve reporting. Better defaults, etc.
 
 v3 - Fix refund issues, change payee from email / description to stripe ID since those other values change and screw up past matching.
 

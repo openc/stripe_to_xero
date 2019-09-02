@@ -3,7 +3,7 @@
 require 'csv'
 require 'date'
 require 'stripe'
-require 'byebug'
+# require 'byebug'
 
 PER_PAGE = 100
 def cents_to_dollars(value)
@@ -23,9 +23,8 @@ def xero_date(date_obj)
 end
 
 Stripe.api_key = ENV['STRIPE_SECRET']
-#Stripe.api_key = '' #Put your secret here and comment the line above if you're not sure about env vars.
-bank_name = ENV['BANK_NAME'] || "US Bank"
-given_limit = ENV['STX_COUNT'] || 50
+bank_name = ENV['BANK_NAME'] || "Royal Bank of Scotland"
+given_limit = ENV['STX_COUNT'] || 200
 limit = given_limit.to_i
 output_file = 'xero.csv'
 
@@ -48,16 +47,21 @@ puts "gathering last #{limit} transfers"
 transfers = Stripe::Transfer.all(limit: limit)
 puts "done"
 
+def charge_description(charge, charge_type="charge")
+  if charge.customer.respond_to? :deleted
+    description = "#{charge_type} from deleted customer id: #{charge.customer.id}"
+  else
+    customer_description = charge.customer.metadata['legal_name'] ? "#{charge.customer.metadata['legal_name']} (#{charge.customer.description})" : charge.customer.description
+    description = "#{charge_type} from #{customer_description} / #{charge.customer.email}"
+  end
+end
+
 def process_refunds(charge, csv)
   if charge.amount_refunded > 0
     date = xero_date charge.created
     if charge.customer
       payee = charge.customer.id
-      if charge.customer.respond_to? :deleted
-        description = "Refund from deleted customer id: #{charge.customer.id}"
-      else
-        description = "Refund from #{charge.customer.description} / #{charge.customer.email}"
-      end
+      description = charge_description(charge, "refund")
     else
       payee = "nil customer"
       description = "Refund from nil customer"
@@ -94,15 +98,12 @@ CSV.open(output_file, 'wb', row_sep: "\r\n") do |csv|
     end
   end
   charges.each do |charge|
+    # debugger
     if charge.paid
       date = xero_date charge.created
       if charge.customer
         payee = charge.customer.id
-        if charge.customer.respond_to? :deleted
-          description = "Payment from deleted customer id: #{charge.customer.id}"
-        else
-          description = "Payment from #{charge.customer.description} / #{charge.customer.email}"
-        end
+        description = charge_description(charge)
       else
         payee = charge.card.name
         description = "Payment from cardholder: #{payee}"
@@ -125,4 +126,3 @@ CSV.open(output_file, 'wb', row_sep: "\r\n") do |csv|
   end
 end
 puts "complete!"
-#puts "complete! Oldest charge: #{DateTime.strptime(charges.last.created.to_s,'%s')}"
