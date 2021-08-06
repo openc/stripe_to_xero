@@ -40,6 +40,7 @@ Requires ruby 2.2.2.
 
 - Use rbenv/rvm to install Ruby 2.2.2
 - In case installation fails use those commands for installation
+
 a) RVM
 1. export warnflags=-Wno-error=implicit-function-declaration
 2. rvm install 2.2.2
