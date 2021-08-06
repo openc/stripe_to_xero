@@ -34,7 +34,16 @@ Use these environment variables as configuration
 
 We use `foreman` to easily set up environment variables. You might find it handy too.
 
-Requires ruby 1.9.
+Requires ruby 2.2.2.
+
+# Troubleshooting
+
+- Use rbenv/rvm to install Ruby 2.2.2
+- In case installation fails use those commands for installation
+a) RVM
+1. export warnflags=-Wno-error=implicit-function-declaration
+2. rvm install 2.2.2
+b) RBENV --> CFLAGS="-Wno-error=implicit-function-declaration" rbenv install 2.2.2
 
 # Changelog
 
