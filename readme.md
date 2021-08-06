@@ -44,6 +44,7 @@ Requires ruby 2.2.2.
 a) RVM
 1. export warnflags=-Wno-error=implicit-function-declaration
 2. rvm install 2.2.2
+
 b) RBENV --> CFLAGS="-Wno-error=implicit-function-declaration" rbenv install 2.2.2
 
 # Changelog
