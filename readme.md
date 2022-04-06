@@ -47,6 +47,34 @@ a) RVM
 
 b) RBENV --> CFLAGS="-Wno-error=implicit-function-declaration" rbenv install 2.2.2
 
+## Further possible setup issues
+This repo runs with ruby 2.2.2, which may cause setup issues.
+
+Some steps that can help fix it include the following.
+
+`rbenv install 2.2.2` kept defaulting to openssl@1.1, which isn't the one we need, even when setting configure options.
+```
+brew uninstall openssl@1.0
+brew uninstall openssl@1.1 OR brew uninstall --ignore-dependencies openssl@1.1
+
+brew tap-new $USER/old-openssl
+brew extract --version=1.0.2t openssl $USER/old-openssl
+brew install openssl@1.0.2t
+
+echo 'export PATH="/usr/local/opt/openssl@1.0.2t/bin:$PATH"' >> ~/.zshrc
+export LDFLAGS="-L/usr/local/opt/openssl@1.0.2t/lib"
+export CPPFLAGS="-I/usr/local/opt/openssl@1.0.2t/include"
+```
+Once this is done, go ahead and install the right version of ruby with the following options:
+```
+CFLAGS="-Wno-error=implicit-function-declaration" CONFIGURE_OPTS="--with-openssl-dir=/usr/local/opt/openssl@1.0.2t" rbenv install 2.2.2
+```
+Then, you will need to have the last version of bundler that will be compatible with that version of ruby:
+```
+gem install bundler -v '~>1'
+bundle install
+```
+
 # Changelog
 
 v4 - Improve reporting. Better defaults, etc.
